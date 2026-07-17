@@ -264,12 +264,78 @@ tr:last-child td{border-bottom:none}
   <div class="footer-note">Real YTD 2026 export (Jan 1 – Jul 14) · One of 17 planned tool detail pages</div>
 </div>
 
+<!-- ==================== TOOL DETAIL VIEW (Distro) ==================== -->
+<div class="wrap hidden" id="view-distro">
+  <button class="back" onclick="showView('landing')">← Back to Dashboard</button>
+
+  <div class="detail-head">
+    <div class="ico">D</div>
+    <div>
+      <h2>Distro</h2>
+      <div class="sub">AI-assisted quoting · Distribution ops</div>
+    </div>
+    <span class="live-pill">● Feeding dashboard</span>
+  </div>
+
+  <div class="grid kpis">
+    <div class="card kpi">
+      <div class="label">Active Users</div>
+      <div class="value">640</div>
+      <div class="foot">Users with ≥1 quote YTD</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Total Quotes</div>
+      <div class="value">37,063</div>
+      <div class="foot">YTD 2026</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Total Line Items</div>
+      <div class="value">680,357</div>
+      <div class="foot">18 lines per quote avg</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Top Division – Region</div>
+      <div class="value" style="font-size:19px;line-height:1.25;margin-top:10px">Plumbing – Socal South Region</div>
+      <div class="foot">5,228 quotes YTD</div>
+    </div>
+  </div>
+
+  <div class="grid detail-grid">
+    <div class="card">
+      <h3>Usage by Division</h3>
+      <div class="chart-box"><canvas id="ddDiv"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Usage by Business Title — Top 5 + Other</h3>
+      <div class="chart-box"><canvas id="ddTitle"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid detail-grid">
+    <div class="card">
+      <h3>Usage by Top 10 Branches</h3>
+      <div class="chart-box short"><canvas id="ddBranch"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 5 Distro Users</h3>
+      <table id="ddLbTable"></table>
+    </div>
+  </div>
+
+  <div class="feed-note">
+    <b style="font-size:16px">⇢</b>
+    <span><b>Data flow:</b> this page publishes Active Users and Quotes to the main dashboard — rolling into Total AI Interactions, the group tiles, and the org leaderboard. Division, region, branch, and title come from the Distro usage export.</span>
+  </div>
+
+  <div class="footer-note">Real YTD 2026 export · Quotes used as the interaction metric · 120 users without division/region mapping counted in totals but not in division chart</div>
+</div>
+
 <script>
 /* ============================================================
    MOCK DATA — this object is the "contract" tool pages will
    eventually publish to. Swap with real feeds later.
    ============================================================ */
-const DATA = {"months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"], "weeks": ["Apr 27", "May 4", "May 11", "May 18", "May 25", "Jun 1", "Jun 8", "Jun 15", "Jun 22", "Jun 29", "Jul 6", "Jul 13"], "trend": {"ateam": [163, 162, 162, 162, 162, 164, 164, 164, 164, 164, 162, 162], "rsc": [20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 20, 20], "r100": [15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]}, "adoption": {"labels": ["R100", "RSC", "Team Members", "Total Org"], "active": [64, 113, 716, 868], "headcount": [76, 237, 3425, 3707], "pct": [84, 48, 21, 23], "target": 75}, "groupShare": {"labels": ["Team Members", "RSC", "R100", "Unmatched"], "values": [52238, 117201, 19970, 27760]}, "categories": {"total": {"label": "Total Organization", "chips": [{"l": "Active users", "v": "868"}, {"l": "Adoption", "v": "23%"}, {"l": "Interactions", "v": "189,409"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [26766, 6494, 1308, 1635, 128222], "adoption": [34, 35, 15, 3, 48]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}]}, "r100": {"label": "R100", "chips": [{"l": "Active users", "v": "64"}, {"l": "Adoption", "v": "84%"}, {"l": "Interactions", "v": "19,970"}, {"l": "Avg score", "v": "39"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [1217, 119, 1008, 582, 11021], "adoption": [100, 71, 100, 67, 81]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}, {"n": "Keith Coty", "r": "VP of Business Systems · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 61}, {"n": "Wally Gustafson", "r": "VP of Digital Solutions · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 58}]}, "ateam": {"label": "Team Members", "chips": [{"l": "Active users", "v": "716"}, {"l": "Adoption", "v": "21%"}, {"l": "Interactions", "v": "52,238"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks"], "interactions": [25549, 6375, 300, 1053], "adoption": [34, 34, 12, 2]}, "leaderboard": [{"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "Stephanie Walker", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 60}, {"n": "Kevin Fitzpatrick", "r": "Regional Director", "d": "Plumbing", "t": "4/6", "s": 59}, {"n": "Shane Davis", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 57}, {"n": "Colby Kendrick", "r": "Branch Manager", "d": "HVAC-R", "t": "2/6", "s": 56}]}, "rsc": {"label": "RSC", "chips": [{"l": "Active users", "v": "113"}, {"l": "Adoption", "v": "48%"}, {"l": "Interactions", "v": "128,222"}, {"l": "Avg score", "v": "38"}], "divisions": {"labels": ["IT", "Supply Chain", "Other RSC", "Finance", "Merchandising", "Marketing & CX", "Transformation", "People Experience", "Credit"], "interactions": [95203, 13304, 8600, 4303, 3957, 1608, 852, 302, 93], "adoption": [89, 83, 41, 20, 29, 78, 27, 30, 11]}, "leaderboard": [{"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "Other RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "Other RSC", "t": "4/6", "s": 64}, {"n": "Carlos Guerra López", "r": "Software Developer II", "d": "IT", "t": "2/6", "s": 60}, {"n": "Victor Ortiz", "r": "Software Developer II", "d": "IT", "t": "3/6", "s": 60}, {"n": "Fatih Gorunmek", "r": "Software Developer II (Data Science)", "d": "IT", "t": "3/6", "s": 59}]}}, "tools": [{"name": "ChatGPT", "cat": "General assistant", "users": 159, "ix": 105304, "live": true}, {"name": "Distro", "cat": "Distribution ops", "users": 640, "ix": 37063, "live": true}, {"name": "Cursor", "cat": "Engineering", "users": 38, "ix": 66143, "live": true}, {"name": "CLU", "cat": "Internal AI", "users": 198, "ix": 634, "live": true}, {"name": "CoPilot", "cat": "M365 productivity", "users": 88, "ix": 5143, "live": true}, {"name": "REX", "cat": "Internal AI", "users": 39, "ix": 2882, "live": true}, {"name": "SCOUT", "cat": "Internal AI", "users": 15, "ix": 700, "live": true, "unit": "branches"}, {"name": "Reece Hub", "cat": "Internal platform", "users": null, "ix": null}, {"name": "AI Smart Search (maX)", "cat": "Product search", "users": null, "ix": null}, {"name": "AI Lists (maX)", "cat": "Sales enablement", "users": null, "ix": null}, {"name": "MD365 Agentic", "cat": "ERP agents", "users": null, "ix": null}, {"name": "Blueprint Studio", "cat": "Design / takeoff", "users": null, "ix": null}, {"name": "AI Takeoffs", "cat": "Estimating", "users": null, "ix": null}, {"name": "Visual Search (maX App)", "cat": "Product search", "users": null, "ix": null}, {"name": "Anglera", "cat": "Specialty", "users": null, "ix": null}, {"name": "Receiving App", "cat": "Warehouse ops", "users": null, "ix": null}], "chatgpt": {"models": {"labels": ["gpt-5.2", "gpt-5.5", "gpt-5.3", "gpt-5.4", "gpt-4o", "gpt-5-reasoning", "other", "gpt-5.1"], "values": [39049, 33016, 28462, 3664, 807, 149, 55, 54]}, "groups": {"labels": ["Team Members", "RSC", "R100"], "values": [23, 76, 35]}, "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "values": [436, 453, 738, 533, 76448]}, "leaderboard": [{"n": "Josh Radford", "r": "Purchasing Manager", "d": "RSC", "m": "9,944 msgs", "s": 54}, {"n": "Manuel Alvarado", "r": "Director Digital Products", "d": "RSC", "m": "6,768 msgs", "s": 45}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "m": "4,478 msgs", "s": 62}, {"n": "Erick Rodrigo Bojorges", "r": "Automation Engineer", "d": "RSC", "m": "2,940 msgs", "s": 53}, {"n": "Axel Daniel Amézquita Sepúlveda", "r": "Cyber Security Analyst", "d": "RSC", "m": "2,809 msgs", "s": 53}], "kpi": {"active": 159, "provisioned": 208, "messages": 105304, "avg_per_active": 662}}, "kpis": {"total_ix": 217869, "active_users": 868, "unmatched_ids": 88, "avg_score": 35, "r100_active": 64, "r100_total": 76, "adoption_pct": 23}};
+const DATA = {"months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"], "weeks": ["Apr 27", "May 4", "May 11", "May 18", "May 25", "Jun 1", "Jun 8", "Jun 15", "Jun 22", "Jun 29", "Jul 6", "Jul 13"], "trend": {"ateam": [163, 162, 162, 162, 162, 164, 164, 164, 164, 164, 162, 162], "rsc": [20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 20, 20], "r100": [15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]}, "adoption": {"labels": ["R100", "RSC", "Team Members", "Total Org"], "active": [64, 113, 716, 868], "headcount": [76, 237, 3425, 3707], "pct": [84, 48, 21, 23], "target": 75}, "groupShare": {"labels": ["Team Members", "RSC", "R100", "Unmatched"], "values": [52238, 117201, 19970, 27760]}, "categories": {"total": {"label": "Total Organization", "chips": [{"l": "Active users", "v": "868"}, {"l": "Adoption", "v": "23%"}, {"l": "Interactions", "v": "189,409"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [26766, 6494, 1308, 1635, 128222], "adoption": [34, 35, 15, 3, 48]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}]}, "r100": {"label": "R100", "chips": [{"l": "Active users", "v": "64"}, {"l": "Adoption", "v": "84%"}, {"l": "Interactions", "v": "19,970"}, {"l": "Avg score", "v": "39"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [1217, 119, 1008, 582, 11021], "adoption": [100, 71, 100, 67, 81]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}, {"n": "Keith Coty", "r": "VP of Business Systems · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 61}, {"n": "Wally Gustafson", "r": "VP of Digital Solutions · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 58}]}, "ateam": {"label": "Team Members", "chips": [{"l": "Active users", "v": "716"}, {"l": "Adoption", "v": "21%"}, {"l": "Interactions", "v": "52,238"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks"], "interactions": [25549, 6375, 300, 1053], "adoption": [34, 34, 12, 2]}, "leaderboard": [{"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "Stephanie Walker", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 60}, {"n": "Kevin Fitzpatrick", "r": "Regional Director", "d": "Plumbing", "t": "4/6", "s": 59}, {"n": "Shane Davis", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 57}, {"n": "Colby Kendrick", "r": "Branch Manager", "d": "HVAC-R", "t": "2/6", "s": 56}]}, "rsc": {"label": "RSC", "chips": [{"l": "Active users", "v": "113"}, {"l": "Adoption", "v": "48%"}, {"l": "Interactions", "v": "128,222"}, {"l": "Avg score", "v": "38"}], "divisions": {"labels": ["IT", "Supply Chain", "Other RSC", "Finance", "Merchandising", "Marketing & CX", "Transformation", "People Experience", "Credit"], "interactions": [95203, 13304, 8600, 4303, 3957, 1608, 852, 302, 93], "adoption": [89, 83, 41, 20, 29, 78, 27, 30, 11]}, "leaderboard": [{"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "Other RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "Other RSC", "t": "4/6", "s": 64}, {"n": "Carlos Guerra López", "r": "Software Developer II", "d": "IT", "t": "2/6", "s": 60}, {"n": "Victor Ortiz", "r": "Software Developer II", "d": "IT", "t": "3/6", "s": 60}, {"n": "Fatih Gorunmek", "r": "Software Developer II (Data Science)", "d": "IT", "t": "3/6", "s": 59}]}}, "tools": [{"name": "ChatGPT", "cat": "General assistant", "users": 159, "ix": 105304, "live": true}, {"name": "Distro", "cat": "Distribution ops", "users": 640, "ix": 37063, "live": true}, {"name": "Cursor", "cat": "Engineering", "users": 38, "ix": 66143, "live": true}, {"name": "CLU", "cat": "Internal AI", "users": 198, "ix": 634, "live": true}, {"name": "CoPilot", "cat": "M365 productivity", "users": 88, "ix": 5143, "live": true}, {"name": "REX", "cat": "Internal AI", "users": 39, "ix": 2882, "live": true}, {"name": "SCOUT", "cat": "Internal AI", "users": 15, "ix": 700, "live": true, "unit": "branches"}, {"name": "Reece Hub", "cat": "Internal platform", "users": null, "ix": null}, {"name": "AI Smart Search (maX)", "cat": "Product search", "users": null, "ix": null}, {"name": "AI Lists (maX)", "cat": "Sales enablement", "users": null, "ix": null}, {"name": "MD365 Agentic", "cat": "ERP agents", "users": null, "ix": null}, {"name": "Blueprint Studio", "cat": "Design / takeoff", "users": null, "ix": null}, {"name": "AI Takeoffs", "cat": "Estimating", "users": null, "ix": null}, {"name": "Visual Search (maX App)", "cat": "Product search", "users": null, "ix": null}, {"name": "Anglera", "cat": "Specialty", "users": null, "ix": null}, {"name": "Receiving App", "cat": "Warehouse ops", "users": null, "ix": null}], "chatgpt": {"models": {"labels": ["gpt-5.2", "gpt-5.5", "gpt-5.3", "gpt-5.4", "gpt-4o", "gpt-5-reasoning", "other", "gpt-5.1"], "values": [39049, 33016, 28462, 3664, 807, 149, 55, 54]}, "groups": {"labels": ["Team Members", "RSC", "R100"], "values": [23, 76, 35]}, "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "values": [436, 453, 738, 533, 76448]}, "leaderboard": [{"n": "Josh Radford", "r": "Purchasing Manager", "d": "RSC", "m": "9,944 msgs", "s": 54}, {"n": "Manuel Alvarado", "r": "Director Digital Products", "d": "RSC", "m": "6,768 msgs", "s": 45}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "m": "4,478 msgs", "s": 62}, {"n": "Erick Rodrigo Bojorges", "r": "Automation Engineer", "d": "RSC", "m": "2,940 msgs", "s": 53}, {"n": "Axel Daniel Amézquita Sepúlveda", "r": "Cyber Security Analyst", "d": "RSC", "m": "2,809 msgs", "s": 53}], "kpi": {"active": 159, "provisioned": 208, "messages": 105304, "avg_per_active": 662}}, "distro": {"kpi": {"active_users": 640, "quotes": 37063, "lines": 680357, "top_divreg": "Plumbing – Socal South Region", "top_divreg_quotes": 5228}, "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen"], "values": [25103, 5687, 34]}, "titles": {"labels": ["Inside Sales Representative", "Branch Manager", "Assistant Branch Manager", "Outside Sales Representative", "Senior Inside Sales Representative", "Other"], "values": [14629, 3727, 3290, 3172, 2255, 9990]}, "branches": {"labels": ["1003", "3004", "5006", "3008", "1008", "9229", "4001", "1945", "1007", "2020"], "values": [3638, 3027, 2832, 2625, 2005, 1589, 1351, 1109, 987, 928], "divisions": ["Plumbing", "HVAC-R", "Plumbing", "Plumbing", "Plumbing", "Unknown", "Plumbing", "Unknown", "Plumbing", "Plumbing"]}, "leaderboard": [{"n": "Jennifer Orellana", "r": "Inside Sales Representative", "d": "Plumbing · Br 1003", "m": "1,904 quotes", "s": 0}, {"n": "Kenny Oliva", "r": "Inside Sales Representative", "d": "Plumbing · Br 5006", "m": "1,853 quotes", "s": 0}, {"n": "Blake Howard", "r": "Inside Sales Representative", "d": "Plumbing · Br 1008", "m": "1,738 quotes", "s": 0}, {"n": "Paul Vazquez", "r": "Inside Sales Representative", "d": "HVAC-R · Br 3004", "m": "1,518 quotes", "s": 0}, {"n": "Dan Dillon", "r": "Senior Inside Sales Representative", "d": "Plumbing · Br 3008", "m": "1,466 quotes", "s": 0}]}, "kpis": {"total_ix": 217869, "active_users": 868, "unmatched_ids": 88, "avg_score": 35, "r100_active": 64, "r100_total": 76, "adoption_pct": 23}};
 const WEEKS = DATA.weeks;
 
 /* ============================================================
@@ -319,8 +385,10 @@ const donutLabels = {
 function showView(v){
   document.getElementById('view-landing').classList.toggle('hidden', v!=='landing');
   document.getElementById('view-detail').classList.toggle('hidden', v!=='detail');
+  document.getElementById('view-distro').classList.toggle('hidden', v!=='distro');
   window.scrollTo(0,0);
   if(v==='detail') renderDetail();
+  if(v==='distro') renderDistro();
 }
 
 /* ---------- landing: trend + donut ---------- */
@@ -395,16 +463,17 @@ function renderCategory(){
 }
 
 /* ---------- landing: tool grid ---------- */
+const TOOL_VIEWS = { 'ChatGPT':'detail', 'Distro':'distro' };
 function renderTools(){
   const max = Math.max(...DATA.tools.map(t=>t.ix||0));
   document.getElementById('toolGrid').innerHTML = DATA.tools.map(t=>{
     const initials = t.name.split(/\s|-/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    return `<div class="card tool ${t.live?'live':'soon'}" ${t.live&&t.name==='ChatGPT'?`onclick="showView('detail')"`:''}>
+    return `<div class="card tool ${t.live?'live':'soon'}" ${TOOL_VIEWS[t.name]?`onclick="showView('${TOOL_VIEWS[t.name]}')"`:''}>
       <div class="head"><div class="ico" style="background:${t.live?'var(--brand)':'var(--text-soft)'}">${initials}</div>
         <div><b>${t.name}</b><span>${t.cat}</span></div></div>
       <div class="bar"><i style="width:${t.ix==null?0:Math.max(3, t.ix/max*100)}%"></i></div>
       <div class="meta"><span>${t.users==null?'— no feed yet':t.users.toLocaleString()+(t.unit==='branches'?' active branches':' active users')}</span><span>${t.ix==null?'':t.ix.toLocaleString()+' interactions'}</span></div>
-      <div class="cta">${t.live?(t.name==='ChatGPT'?'View detail page →':'Feeding dashboard'):'Detail page coming soon'}</div>
+      <div class="cta">${t.live?(TOOL_VIEWS[t.name]?'View detail page →':'Feeding dashboard'):'Detail page coming soon'}</div>
     </div>`;
   }).join('');
 }
@@ -439,8 +508,47 @@ function renderDetail(){
   document.getElementById('dLbTable').innerHTML = leaderRows(g.leaderboard, 'm');
 }
 
+/* ---------- Distro detail page ---------- */
+let distroRendered = false;
+function renderDistro(){
+  if(distroRendered) return;
+  distroRendered = true;
+  const d = DATA.distro;
+  makeChart('ddDiv', {
+    type:'bar',
+    data:{ labels:d.divisions.labels, datasets:[{label:'Quotes', data:d.divisions.values,
+      backgroundColor:d.divisions.labels.map(divColor), borderRadius:6, maxBarThickness:56}]},
+    options:{ maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true, title:{display:true,text:'Quotes (YTD)'}, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
+  makeChart('ddTitle', {
+    type:'doughnut',
+    data:{ labels:d.titles.labels, datasets:[{data:d.titles.values,
+      backgroundColor:[css('--brand'),css('--accent-2'),css('--accent-3'),css('--accent-4'),css('--accent-5'),'#9aa3b2'],
+      borderWidth:2, borderColor:css('--card')}]},
+    options:{ maintainAspectRatio:false, cutout:'55%', plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7, font:{size:10.5}}}} },
+    plugins:[donutLabels]
+  });
+  makeChart('ddBranch', {
+    type:'bar',
+    data:{ labels:d.branches.labels.map((b,i)=>[b, d.branches.divisions[i]]), datasets:[{label:'Quotes', data:d.branches.values,
+      backgroundColor:d.branches.divisions.map(dv=>dv==='Unknown'?'#9aa3b2':divColor(dv)), borderRadius:6, maxBarThickness:34}]},
+    options:{ maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
+  document.getElementById('ddLbTable').innerHTML =
+    `<tr><th></th><th>User</th><th>Volume</th></tr>` +
+    d.leaderboard.map((u,i)=>`
+    <tr>
+      <td><div class="rank ${i===0?'r1':''}">${i+1}</div></td>
+      <td class="who"><b>${u.n}</b><span>${u.r} · ${u.d}</span></td>
+      <td><span class="badge">${u.m}</span></td>
+    </tr>`).join('');
+}
+
 /* ---------- init ---------- */
 renderTrend(); renderDonut(); renderTabs(); renderCategory(); renderTools();
 </script>
 </body>
 </html>
+
