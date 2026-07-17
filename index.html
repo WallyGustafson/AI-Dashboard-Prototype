@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reece — AI Usage Dashboard (Prototype)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   THEME CONFIG — change brand colors/fonts here only.
+   Everything below inherits from these variables.
+   ============================================================ */
+:root{
+  --brand:        #1d4ed8;   /* primary accent */
+  --brand-soft:   #dbeafe;
+  --brand-dark:   #1A2333;   /* header / dark surfaces */
+  --accent-2:     #0891b2;   /* secondary series */
+  --accent-3:     #EAB308;   /* R100 series (line + donut) */
+  --accent-4:     #059669;
+  --accent-5:     #d97706;
+  --good:         #059669;
+  --warn:         #d97706;
+  --bg:           #f3f5f9;
+  --card:         #ffffff;
+  --border:       #e4e8f0;
+  --text:         #14203a;
+  --text-soft:    #5b6577;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(15,25,60,.08), 0 4px 14px rgba(15,25,60,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+button{font-family:inherit;cursor:pointer}
+
+/* ---------- top bar ---------- */
+.topbar{background:var(--brand-dark);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.topbar h1{font-size:17px;font-weight:650}
+.topbar .sub{font-size:11.5px;opacity:.65;margin-top:2px}
+.topbar .spacer{flex:1}
+.pill{font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+.range-select{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12.5px}
+.range-select option{color:var(--text)}
+
+.wrap{max-width:1240px;margin:0 auto;padding:24px 28px 60px}
+
+/* ---------- generic cards ---------- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px}
+.card h3{font-size:13px;font-weight:650;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.grid{display:grid;gap:16px}
+
+/* ---------- KPI row ---------- */
+.kpis{grid-template-columns:repeat(4,1fr);margin-bottom:16px}
+.kpi .label{font-size:13px;color:var(--text-soft);font-weight:650;text-transform:uppercase;letter-spacing:.06em}
+.kpi .value{font-size:30px;font-weight:750;margin:6px 0 2px;letter-spacing:-.5px}
+.kpi .delta{font-size:12px;font-weight:600}
+.kpi .delta.up{color:var(--good)} .kpi .delta.down{color:var(--warn)}
+.kpi .foot{font-size:11.5px;color:var(--text-soft);margin-top:4px}
+
+/* ---------- charts row ---------- */
+.two-col{grid-template-columns:2fr 1fr;margin-bottom:16px}
+.chart-box{position:relative;height:260px}
+.chart-box.tall{height:300px}
+.chart-box.short{height:220px}
+
+/* ---------- category tabs ---------- */
+.tabs{display:flex;gap:8px;margin:26px 0 14px;flex-wrap:wrap}
+.tab{border:1px solid var(--border);background:var(--card);border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;color:var(--text-soft)}
+.tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.section-title{font-size:16px;font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.section-title .hint{font-size:12px;font-weight:500;color:var(--text-soft)}
+
+.cat-grid{grid-template-columns:1.2fr 1fr}
+.stat-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--text-soft)}
+.chip b{display:block;font-size:16px;color:var(--text);font-weight:700;margin-top:1px}
+
+/* ---------- leaderboard ---------- */
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.rank{width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.rank.r1{background:var(--brand);color:#fff}
+.who b{display:block;font-weight:650}
+.who span{font-size:11.5px;color:var(--text-soft)}
+.scorebar{display:flex;align-items:center;gap:8px}
+.scorebar .track{flex:1;height:6px;border-radius:99px;background:var(--bg);min-width:60px}
+.scorebar .fill{height:6px;border-radius:99px;background:var(--brand)}
+.scorebar b{width:28px;text-align:right}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--border);color:var(--text-soft);white-space:nowrap}
+.info{cursor:help;color:var(--brand);font-size:12px;border-bottom:1px dotted var(--brand)}
+
+/* ---------- tool grid ---------- */
+.tools{grid-template-columns:repeat(3,1fr)}
+.tool{display:flex;flex-direction:column;gap:8px;transition:transform .12s, box-shadow .12s}
+.tool .head{display:flex;align-items:center;gap:10px}
+.tool .ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;background:var(--brand);flex-shrink:0}
+.tool .head b{font-size:13.5px}
+.tool .head span{display:block;font-size:11px;color:var(--text-soft)}
+.tool .bar{height:6px;border-radius:99px;background:var(--bg)}
+.tool .bar i{display:block;height:6px;border-radius:99px;background:var(--accent-2)}
+.tool .meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-soft)}
+.tool .cta{font-size:12px;font-weight:650;color:var(--brand);margin-top:2px}
+.tool.live{cursor:pointer;border-color:var(--brand)}
+.tool.live:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(29,78,216,.15)}
+.tool.soon{opacity:.72}
+.tool.soon .cta{color:var(--text-soft);font-weight:500}
+
+/* ---------- detail page ---------- */
+.back{background:none;border:none;color:var(--brand);font-size:13px;font-weight:650;padding:0;margin-bottom:14px;display:inline-flex;align-items:center;gap:6px}
+.detail-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.detail-head .ico{width:48px;height:48px;border-radius:12px;background:var(--brand);color:#fff;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center}
+.detail-head h2{font-size:22px;font-weight:750}
+.detail-head .sub{font-size:12.5px;color:var(--text-soft);margin-top:2px}
+.live-pill{font-size:11px;font-weight:700;color:var(--good);background:#d1fae5;border:1px solid #a7f3d0;padding:4px 10px;border-radius:99px;margin-left:auto}
+.detail-grid{grid-template-columns:2fr 1fr;margin-bottom:16px}
+.feed-note{margin-top:20px;background:var(--brand-soft);border:1px solid #bfd6fb;border-radius:var(--radius);padding:14px 18px;font-size:12.5px;color:#1e3a8a;display:flex;gap:10px;align-items:center}
+
+.footer-note{margin-top:34px;text-align:center;font-size:11.5px;color:var(--text-soft)}
+.hidden{display:none}
+@media (max-width:980px){.kpis{grid-template-columns:repeat(2,1fr)}.two-col,.cat-grid,.detail-grid{grid-template-columns:1fr}.tools{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1 id="topTitle">AI Usage Dashboard</h1>
+    <div class="sub">Enterprise AI Adoption &amp; Engagement</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill">Prototype · Real YTD 2026 file data</span>
+  <select class="range-select" title="Static in prototype">
+    <option>FY27 (Fiscal YTD)</option><option>Last 30 Days</option><option>Last 90 Days</option><option>Quarter to Date</option><option selected>YTD (Calendar)</option>
+  </select>
+</div>
+
+<!-- ==================== LANDING VIEW ==================== -->
+<div class="wrap" id="view-landing">
+
+  <div class="grid kpis">
+    <div class="card kpi">
+      <div class="label">Total AI Interactions</div>
+      <div class="value">217,869</div>
+      <div class="foot">YTD 2026 · 7 tools reporting data</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Active AI Users</div>
+      <div class="value">868</div>
+      <div class="foot">23% of 3,707 employees · +88 unmatched identities</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Avg Engagement Score</div>
+      <div class="value">35<span style="font-size:16px;color:var(--text-soft)">/100</span></div>
+      <div class="foot">Breadth × depth across 6 user-level tools</div>
+    </div>
+    <div class="card kpi" style="background:#eab308;border-color:#ca9a06">
+      <div class="label" style="color:#1A2333">R100 Adoption</div>
+      <div class="value" style="color:#1A2333">84%</div>
+      <div class="foot" style="color:rgba(26,35,51,.8)">64 of 76 R100 leaders active YTD</div>
+    </div>
+  </div>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h3>AI Adoption vs Target — % of Headcount Active (YTD)</h3>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Interactions by Group</h3>
+      <div class="chart-box"><canvas id="groupDonut"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">Usage by Group
+    <span class="hint">Drill into R100, Team Members, or the RSC</span>
+  </div>
+  <div class="tabs" id="catTabs"></div>
+
+  <div class="grid cat-grid">
+    <div class="card">
+      <h3 id="divChartTitle">Usage by Division</h3>
+      <div class="stat-chips" id="catChips"></div>
+      <div class="chart-box tall"><canvas id="divChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 id="lbTitle">Top 5 AI Users <span class="info" title="Engagement Score = breadth (share of available tools actively used) weighted at 55% + depth of engagement weighted at 45%. Rewards using ALL your available tools well over heavy use of one.">ⓘ score</span></h3>
+      <table id="lbTable"></table>
+    </div>
+  </div>
+
+  <div class="section-title">Tool Adoption
+    <span class="hint">Click a live tool to open its detail page — each tool page feeds this dashboard</span>
+  </div>
+  <div class="grid tools" id="toolGrid"></div>
+
+  <div class="footer-note">Prototype · ChatGPT, CoPilot, Cursor, CLU, Distro &amp; REX matched to Workday divisions via email/name · SCOUT reported at branch level (no user mapping) · Adoption = distinct users with any recorded activity YTD ÷ Workday headcount · Target 75%</div>
+</div>
+
+<!-- ==================== TOOL DETAIL VIEW (ChatGPT) ==================== -->
+<div class="wrap hidden" id="view-detail">
+  <button class="back" onclick="showView('landing')">← Back to Dashboard</button>
+
+  <div class="detail-head">
+    <div class="ico">GPT</div>
+    <div>
+      <h2>ChatGPT Enterprise</h2>
+      <div class="sub">General-purpose AI assistant · Licensed org-wide · Owner: IT / Transformation</div>
+    </div>
+    <span class="live-pill">● Feeding dashboard</span>
+  </div>
+
+  <div class="grid kpis">
+    <div class="card kpi">
+      <div class="label">Active Users</div>
+      <div class="value">159</div>
+      <div class="foot">76% of 208 provisioned seats</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Messages (YTD)</div>
+      <div class="value">105,304</div>
+      <div class="foot">48% of all org AI interactions</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Avg Messages / Active User</div>
+      <div class="value">662</div>
+      <div class="foot">Jan 1 – Jul 14, 2026</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Matched to Workday</div>
+      <div class="value">72%</div>
+      <div class="foot">149 of 206 users matched to divisions</div>
+    </div>
+  </div>
+
+  <div class="grid detail-grid">
+    <div class="card">
+      <h3>Messages by Model — YTD</h3>
+      <div class="chart-box"><canvas id="dTrend"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Matched Active Users by Group</h3>
+      <div class="chart-box"><canvas id="dGroup"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid detail-grid">
+    <div class="card">
+      <h3>Messages by Division (YTD)</h3>
+      <div class="chart-box short"><canvas id="dDiv"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 5 ChatGPT Users</h3>
+      <table id="dLbTable"></table>
+    </div>
+  </div>
+
+  <div class="feed-note">
+    <b style="font-size:16px">⇢</b>
+    <span><b>Data flow:</b> this page publishes Active Users, Messages, and Engagement Index to the main dashboard — rolling into the Total AI Usage, R100, Team Members, and RSC tiles plus the org leaderboard. Every tool gets a page like this (some shared).</span>
+  </div>
+
+  <div class="footer-note">Real YTD 2026 export (Jan 1 – Jul 14) · One of 17 planned tool detail pages</div>
+</div>
+
+<script>
+/* ============================================================
+   MOCK DATA — this object is the "contract" tool pages will
+   eventually publish to. Swap with real feeds later.
+   ============================================================ */
+const DATA = {"months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"], "weeks": ["Apr 27", "May 4", "May 11", "May 18", "May 25", "Jun 1", "Jun 8", "Jun 15", "Jun 22", "Jun 29", "Jul 6", "Jul 13"], "trend": {"ateam": [163, 162, 162, 162, 162, 164, 164, 164, 164, 164, 162, 162], "rsc": [20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 20, 20], "r100": [15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]}, "adoption": {"labels": ["R100", "RSC", "Team Members", "Total Org"], "active": [64, 113, 716, 868], "headcount": [76, 237, 3425, 3707], "pct": [84, 48, 21, 23], "target": 75}, "groupShare": {"labels": ["Team Members", "RSC", "R100", "Unmatched"], "values": [52238, 117201, 19970, 27760]}, "categories": {"total": {"label": "Total Organization", "chips": [{"l": "Active users", "v": "868"}, {"l": "Adoption", "v": "23%"}, {"l": "Interactions", "v": "189,409"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [26766, 6494, 1308, 1635, 128222], "adoption": [34, 35, 15, 3, 48]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}]}, "r100": {"label": "R100", "chips": [{"l": "Active users", "v": "64"}, {"l": "Adoption", "v": "84%"}, {"l": "Interactions", "v": "19,970"}, {"l": "Avg score", "v": "39"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "interactions": [1217, 119, 1008, 582, 11021], "adoption": [100, 71, 100, 67, 81]}, "leaderboard": [{"n": "Vic Lamberty", "r": "Regional Vice President · R100", "d": "Plumbing", "t": "3/6", "s": 66}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "RSC", "t": "4/6", "s": 64}, {"n": "James Healy", "r": "Chief Executive Officer · R100", "d": "Other", "t": "3/6", "s": 62}, {"n": "Keith Coty", "r": "VP of Business Systems · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 61}, {"n": "Wally Gustafson", "r": "VP of Digital Solutions · R100", "d": "Information Technology (IT)", "t": "3/6", "s": 58}]}, "ateam": {"label": "Team Members", "chips": [{"l": "Active users", "v": "716"}, {"l": "Adoption", "v": "21%"}, {"l": "Interactions", "v": "52,238"}, {"l": "Avg score", "v": "35"}], "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks"], "interactions": [25549, 6375, 300, 1053], "adoption": [34, 34, 12, 2]}, "leaderboard": [{"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "t": "2/6", "s": 62}, {"n": "Stephanie Walker", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 60}, {"n": "Kevin Fitzpatrick", "r": "Regional Director", "d": "Plumbing", "t": "4/6", "s": 59}, {"n": "Shane Davis", "r": "Outside Sales Representative", "d": "Plumbing", "t": "2/6", "s": 57}, {"n": "Colby Kendrick", "r": "Branch Manager", "d": "HVAC-R", "t": "2/6", "s": 56}]}, "rsc": {"label": "RSC", "chips": [{"l": "Active users", "v": "113"}, {"l": "Adoption", "v": "48%"}, {"l": "Interactions", "v": "128,222"}, {"l": "Avg score", "v": "38"}], "divisions": {"labels": ["IT", "Supply Chain", "Other RSC", "Finance", "Merchandising", "Marketing & CX", "Transformation", "People Experience", "Credit"], "interactions": [95203, 13304, 8600, 4303, 3957, 1608, 852, 302, 93], "adoption": [89, 83, 41, 20, 29, 78, 27, 30, 11]}, "leaderboard": [{"n": "Kristen Fowler", "r": "Sales Strategy Manager", "d": "Other RSC", "t": "3/6", "s": 65}, {"n": "Adam Watson", "r": "Chief Merchandising Officer · R100", "d": "Other RSC", "t": "4/6", "s": 64}, {"n": "Carlos Guerra López", "r": "Software Developer II", "d": "IT", "t": "2/6", "s": 60}, {"n": "Victor Ortiz", "r": "Software Developer II", "d": "IT", "t": "3/6", "s": 60}, {"n": "Fatih Gorunmek", "r": "Software Developer II (Data Science)", "d": "IT", "t": "3/6", "s": 59}]}}, "tools": [{"name": "ChatGPT", "cat": "General assistant", "users": 159, "ix": 105304, "live": true}, {"name": "Distro", "cat": "Distribution ops", "users": 640, "ix": 37063, "live": true}, {"name": "Cursor", "cat": "Engineering", "users": 38, "ix": 66143, "live": true}, {"name": "CLU", "cat": "Internal AI", "users": 198, "ix": 634, "live": true}, {"name": "CoPilot", "cat": "M365 productivity", "users": 88, "ix": 5143, "live": true}, {"name": "REX", "cat": "Internal AI", "users": 39, "ix": 2882, "live": true}, {"name": "SCOUT", "cat": "Internal AI", "users": 15, "ix": 700, "live": true, "unit": "branches"}, {"name": "Reece Hub", "cat": "Internal platform", "users": null, "ix": null}, {"name": "AI Smart Search (maX)", "cat": "Product search", "users": null, "ix": null}, {"name": "AI Lists (maX)", "cat": "Sales enablement", "users": null, "ix": null}, {"name": "MD365 Agentic", "cat": "ERP agents", "users": null, "ix": null}, {"name": "Blueprint Studio", "cat": "Design / takeoff", "users": null, "ix": null}, {"name": "AI Takeoffs", "cat": "Estimating", "users": null, "ix": null}, {"name": "Visual Search (maX App)", "cat": "Product search", "users": null, "ix": null}, {"name": "Anglera", "cat": "Specialty", "users": null, "ix": null}, {"name": "Receiving App", "cat": "Warehouse ops", "users": null, "ix": null}], "chatgpt": {"models": {"labels": ["gpt-5.2", "gpt-5.5", "gpt-5.3", "gpt-5.4", "gpt-4o", "gpt-5-reasoning", "other", "gpt-5.1"], "values": [39049, 33016, 28462, 3664, 807, 149, 55, 54]}, "groups": {"labels": ["Team Members", "RSC", "R100"], "values": [23, 76, 35]}, "divisions": {"labels": ["Plumbing", "HVAC-R", "Bath + Kitchen", "Waterworks", "RSC"], "values": [436, 453, 738, 533, 76448]}, "leaderboard": [{"n": "Josh Radford", "r": "Purchasing Manager", "d": "RSC", "m": "9,944 msgs", "s": 54}, {"n": "Manuel Alvarado", "r": "Director Digital Products", "d": "RSC", "m": "6,768 msgs", "s": 45}, {"n": "David Weise", "r": "Manager, Innovation", "d": "Other", "m": "4,478 msgs", "s": 62}, {"n": "Erick Rodrigo Bojorges", "r": "Automation Engineer", "d": "RSC", "m": "2,940 msgs", "s": 53}, {"n": "Axel Daniel Amézquita Sepúlveda", "r": "Cyber Security Analyst", "d": "RSC", "m": "2,809 msgs", "s": 53}], "kpi": {"active": 159, "provisioned": 208, "messages": 105304, "avg_per_active": 662}}, "kpis": {"total_ix": 217869, "active_users": 868, "unmatched_ids": 88, "avg_score": 35, "r100_active": 64, "r100_total": 76, "adoption_pct": 23}};
+const WEEKS = DATA.weeks;
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* Division brand colors — RSC sub-divisions (Finance, IT, etc.) inherit RSC blue */
+const DIVISION_COLORS = {
+  "Plumbing":       "#e11f1c",
+  "HVAC-R":         "#009ade",
+  "Bath + Kitchen": "#5b6063",
+  "Waterworks":     "#000000",
+  "RSC":            "#1d4ed8"
+};
+const divColor = label => DIVISION_COLORS[label] || DIVISION_COLORS["RSC"];
+const charts = {};
+function makeChart(id, cfg){
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+Chart.defaults.font.family = css('--font');
+Chart.defaults.color = css('--text-soft');
+Chart.defaults.borderColor = css('--border');
+
+/* Draws each segment's % of total in white on the donut ring */
+const donutLabels = {
+  id:'donutLabels',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    const data = chart.data.datasets[0].data;
+    const total = data.reduce((a,b)=>a+b,0);
+    chart.getDatasetMeta(0).data.forEach((arc,i)=>{
+      const pct = data[i]/total*100;
+      const pos = arc.tooltipPosition();
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.font = `700 ${pct < 10 ? 11 : 13}px ${css('--font')}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(pct) + '%', pos.x, pos.y);
+      ctx.restore();
+    });
+  }
+};
+
+function showView(v){
+  document.getElementById('view-landing').classList.toggle('hidden', v!=='landing');
+  document.getElementById('view-detail').classList.toggle('hidden', v!=='detail');
+  window.scrollTo(0,0);
+  if(v==='detail') renderDetail();
+}
+
+/* ---------- landing: trend + donut ---------- */
+function renderTrend(){
+  const a = DATA.adoption;
+  makeChart('trendChart', {
+    type:'bar',
+    data:{ labels:a.labels, datasets:[
+      {label:'Adoption %', data:a.pct, backgroundColor:[css('--accent-3'),css('--accent-2'),css('--brand'),'#5b6063'], borderRadius:8, maxBarThickness:72, order:2},
+      {label:'Target: '+a.target+'% adoption rate', data:a.labels.map(()=>a.target), type:'line', borderColor:'#dc2626', borderDash:[7,5], pointRadius:0, borderWidth:2, pointStyle:'line', order:1}
+    ]},
+    options:{ maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7, filter:(item)=>item.datasetIndex===1}},
+        tooltip:{callbacks:{label:(c)=> c.dataset.type==='line' ? 'Target: '+a.target+'%' :
+          a.active[c.dataIndex].toLocaleString()+' of '+a.headcount[c.dataIndex].toLocaleString()+' active ('+c.raw+'%)'}}},
+      scales:{y:{beginAtZero:true, max:100, title:{display:true,text:'% of headcount active'}, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
+}
+function renderDonut(){
+  makeChart('groupDonut', {
+    type:'doughnut',
+    data:{ labels:DATA.groupShare.labels,
+      datasets:[{data:DATA.groupShare.values, backgroundColor:[css('--brand'),css('--accent-2'),css('--accent-3'),'#9aa3b2'], borderWidth:2, borderColor:css('--card')}]},
+    options:{ maintainAspectRatio:false, cutout:'55%',
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}} },
+    plugins:[donutLabels]
+  });
+}
+
+/* ---------- landing: category tabs ---------- */
+let activeCat = 'total';
+function renderTabs(){
+  const el = document.getElementById('catTabs');
+  el.innerHTML = '';
+  Object.entries(DATA.categories).forEach(([key,c])=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (key===activeCat?' active':'');
+    b.textContent = c.label;
+    b.onclick = ()=>{ activeCat = key; renderTabs(); renderCategory(); };
+    el.appendChild(b);
+  });
+}
+function leaderRows(rows, extraKey){
+  return `<tr><th></th><th>User</th><th>${extraKey==='m'?'Volume':'Tools'}</th><th style="min-width:110px">Score</th></tr>` +
+    rows.map((u,i)=>`
+    <tr>
+      <td><div class="rank ${i===0?'r1':''}">${i+1}</div></td>
+      <td class="who"><b>${u.n}</b><span>${u.r} · ${u.d}</span></td>
+      <td><span class="badge">${extraKey==='m'?u.m:u.t+' tools'}</span></td>
+      <td><div class="scorebar"><div class="track"><div class="fill" style="width:${u.s}%"></div></div><b>${u.s}</b></div></td>
+    </tr>`).join('');
+}
+function renderCategory(){
+  const c = DATA.categories[activeCat];
+  document.getElementById('divChartTitle').textContent = c.label + ' — Usage by Division';
+  document.getElementById('catChips').innerHTML =
+    c.chips.map(ch=>`<div class="chip">${ch.l}<b>${ch.v}</b></div>`).join('');
+  document.getElementById('lbTable').innerHTML = leaderRows(c.leaderboard);
+  makeChart('divChart', {
+    type:'bar',
+    data:{ labels:c.divisions.labels, datasets:[
+      {label:'Interactions (YTD)', data:c.divisions.interactions, backgroundColor:c.divisions.labels.map(divColor), borderRadius:6, yAxisID:'y', maxBarThickness:46, order:2},
+      {label:'Adoption %', data:c.divisions.adoption, type:'line', borderColor:css('--accent-5'), backgroundColor:css('--accent-5'), yAxisID:'y1', tension:.3, pointRadius:4, order:1}
+    ]},
+    options:{ maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}},
+      scales:{
+        y:{beginAtZero:true, title:{display:true,text:'Interactions'}, grid:{drawBorder:false}},
+        y1:{beginAtZero:true, max:100, position:'right', title:{display:true,text:'Adoption %'}, grid:{display:false}},
+        x:{grid:{display:false}, ticks:{autoSkip:false, maxRotation:38, minRotation:0}} } }
+  });
+}
+
+/* ---------- landing: tool grid ---------- */
+function renderTools(){
+  const max = Math.max(...DATA.tools.map(t=>t.ix||0));
+  document.getElementById('toolGrid').innerHTML = DATA.tools.map(t=>{
+    const initials = t.name.split(/\s|-/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    return `<div class="card tool ${t.live?'live':'soon'}" ${t.live&&t.name==='ChatGPT'?`onclick="showView('detail')"`:''}>
+      <div class="head"><div class="ico" style="background:${t.live?'var(--brand)':'var(--text-soft)'}">${initials}</div>
+        <div><b>${t.name}</b><span>${t.cat}</span></div></div>
+      <div class="bar"><i style="width:${t.ix==null?0:Math.max(3, t.ix/max*100)}%"></i></div>
+      <div class="meta"><span>${t.users==null?'— no feed yet':t.users.toLocaleString()+(t.unit==='branches'?' active branches':' active users')}</span><span>${t.ix==null?'':t.ix.toLocaleString()+' interactions'}</span></div>
+      <div class="cta">${t.live?(t.name==='ChatGPT'?'View detail page →':'Feeding dashboard'):'Detail page coming soon'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- detail page ---------- */
+let detailRendered = false;
+function renderDetail(){
+  if(detailRendered) return;
+  detailRendered = true;
+  const g = DATA.chatgpt;
+  makeChart('dTrend', {
+    type:'bar',
+    data:{ labels:g.models.labels, datasets:[{label:'Messages', data:g.models.values,
+      backgroundColor:css('--brand'), borderRadius:6, maxBarThickness:46}]},
+    options:{ maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
+  makeChart('dGroup', {
+    type:'doughnut',
+    data:{ labels:g.groups.labels, datasets:[{data:g.groups.values,
+      backgroundColor:[css('--brand'),css('--accent-2'),css('--accent-3')], borderWidth:2, borderColor:css('--card')}]},
+    options:{ maintainAspectRatio:false, cutout:'55%', plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}} },
+    plugins:[donutLabels]
+  });
+  makeChart('dDiv', {
+    type:'bar',
+    data:{ labels:g.divisions.labels, datasets:[{label:'Messages', data:g.divisions.values,
+      backgroundColor:g.divisions.labels.map(divColor), borderRadius:6, maxBarThickness:42}]},
+    options:{ maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true, grid:{drawBorder:false}}, y:{grid:{display:false}}} }
+  });
+  document.getElementById('dLbTable').innerHTML = leaderRows(g.leaderboard, 'm');
+}
+
+/* ---------- init ---------- */
+renderTrend(); renderDonut(); renderTabs(); renderCategory(); renderTools();
+</script>
+</body>
+</html>
