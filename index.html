@@ -117,6 +117,8 @@ tr:last-child td{border-bottom:none}
 .detail-grid{grid-template-columns:2fr 1fr;margin-bottom:16px}
 .feed-note{margin-top:20px;background:var(--brand-soft);border:1px solid #bfd6fb;border-radius:var(--radius);padding:14px 18px;font-size:12.5px;color:#1e3a8a;display:flex;gap:10px;align-items:center}
 
+.mock-banner{background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:var(--radius);padding:12px 18px;font-size:12.5px;font-weight:600;display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.mock-pill{font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #f59e0b;padding:4px 10px;border-radius:99px;margin-left:auto}
 .footer-note{margin-top:34px;text-align:center;font-size:11.5px;color:var(--text-soft)}
 .hidden{display:none}
 @media (max-width:980px){.kpis{grid-template-columns:repeat(2,1fr)}.two-col,.cat-grid,.detail-grid{grid-template-columns:1fr}.tools{grid-template-columns:repeat(2,1fr)}}
@@ -131,8 +133,8 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="spacer"></div>
   <span class="pill">Prototype · Real YTD 2026 file data</span>
-  <select class="range-select" title="Static in prototype">
-    <option>FY27 (Fiscal YTD)</option><option>Last 30 Days</option><option>Last 90 Days</option><option>Quarter to Date</option><option selected>YTD (Calendar)</option>
+  <select class="range-select" id="rangeSelect" onchange="onRangeChange(this.value)">
+    <option>FY27 (Fiscal YTD)</option><option>Last 30 Days</option><option>Last 90 Days</option><option>Quarter to Date</option><option selected>YTD (Calendar)</option><option value="monthly">Month over Month (Mock)</option>
   </select>
 </div>
 
@@ -330,6 +332,70 @@ tr:last-child td{border-bottom:none}
   <div class="footer-note">Real YTD 2026 export · Quotes used as the interaction metric · 120 users without division/region mapping counted in totals but not in division chart</div>
 </div>
 
+<!-- ==================== MONTH OVER MONTH VIEW (MOCK) ==================== -->
+<div class="wrap hidden" id="view-monthly">
+  <button class="back" onclick="document.getElementById('rangeSelect').selectedIndex=4; showView('landing')">← Back to Dashboard</button>
+
+  <div class="mock-banner">⚠ <span>MOCK DATA — illustrative layout only. ChatGPT, Distro, Cursor &amp; CoPilot currently report YTD totals without dates, so real month-over-month figures aren't possible yet. This page shows the concept using sample numbers.</span></div>
+
+  <div class="detail-head">
+    <div class="ico" style="background:var(--accent-5)">M</div>
+    <div>
+      <h2>Month over Month — Usage Trends</h2>
+      <div class="sub">Change in AI interactions by month · Organization, divisions &amp; groups</div>
+    </div>
+    <span class="mock-pill">◌ Mock data</span>
+  </div>
+
+  <div class="grid kpis">
+    <div class="card kpi">
+      <div class="label">Latest Month (Jul)</div>
+      <div class="value">33,800</div>
+      <div class="delta up">▲ 11% vs June</div>
+      <div class="foot">Total AI interactions</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Avg MoM Growth</div>
+      <div class="value">+11%</div>
+      <div class="foot">Average across Feb–Jul</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Best Month</div>
+      <div class="value">July</div>
+      <div class="foot">33,800 interactions</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">YTD Total</div>
+      <div class="value">174,900</div>
+      <div class="foot">Jan – Jul 2026</div>
+    </div>
+  </div>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h3>Total Organization — Interactions &amp; MoM % Change</h3>
+      <div class="chart-box"><canvas id="mTotal"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>% of Usage by Month</h3>
+      <div class="chart-box"><canvas id="mDonut"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h3>Division Level — Monthly Interactions</h3>
+      <div class="chart-box"><canvas id="mDiv"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Groups — R100 · RSC · Team Members</h3>
+      <div class="chart-box"><canvas id="mGrp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="footer-note">MOCK DATA · Page becomes live automatically once monthly usage feeds exist for all tools · No per-user leaderboard at monthly grain by design</div>
+</div>
+
 <script>
 /* ============================================================
    MOCK DATA — this object is the "contract" tool pages will
@@ -383,12 +449,77 @@ const donutLabels = {
 };
 
 function showView(v){
-  document.getElementById('view-landing').classList.toggle('hidden', v!=='landing');
-  document.getElementById('view-detail').classList.toggle('hidden', v!=='detail');
-  document.getElementById('view-distro').classList.toggle('hidden', v!=='distro');
+  ['landing','detail','distro','monthly'].forEach(x=>
+    document.getElementById('view-'+x).classList.toggle('hidden', v!==x));
   window.scrollTo(0,0);
   if(v==='detail') renderDetail();
   if(v==='distro') renderDistro();
+  if(v==='monthly') renderMonthly();
+}
+function onRangeChange(val){ showView(val==='monthly' ? 'monthly' : 'landing'); }
+
+/* ---------- Month over Month (MOCK DATA) ---------- */
+const MOCK_MONTHLY = {
+  labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'],
+  org: [18200, 19450, 22300, 24100, 26650, 30400, 33800],
+  divisions: {
+    'Plumbing':       [5200, 5600, 6400, 6900, 7600, 8700, 9600],
+    'HVAC-R':         [3100, 3300, 3800, 4100, 4500, 5200, 5800],
+    'Bath + Kitchen': [1400, 1500, 1700, 1900, 2100, 2400, 2700],
+    'Waterworks':     [2200, 2350, 2700, 2900, 3200, 3700, 4100]
+  },
+  groups: {
+    'R100':         [900, 1000, 1150, 1250, 1400, 1600, 1800],
+    'RSC':          [5400, 5700, 6600, 7100, 7900, 9000, 10000],
+    'Team Members': [11900, 12750, 14550, 15750, 17350, 19800, 22000]
+  }
+};
+let monthlyRendered = false;
+function renderMonthly(){
+  if(monthlyRendered) return;
+  monthlyRendered = true;
+  const mm = MOCK_MONTHLY;
+  const mom = mm.org.map((v,i)=> i===0 ? null : Math.round((v-mm.org[i-1])/mm.org[i-1]*100));
+  makeChart('mTotal', {
+    type:'bar',
+    data:{ labels:mm.labels, datasets:[
+      {label:'Interactions', data:mm.org, backgroundColor:css('--brand'), borderRadius:6, yAxisID:'y', maxBarThickness:46, order:2},
+      {label:'MoM % change', data:mom, type:'line', borderColor:css('--accent-5'), backgroundColor:css('--accent-5'), yAxisID:'y1', tension:.3, pointRadius:4, order:1}
+    ]},
+    options:{ maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}},
+      scales:{ y:{beginAtZero:true, title:{display:true,text:'Interactions'}, grid:{drawBorder:false}},
+        y1:{position:'right', title:{display:true,text:'MoM %'}, grid:{display:false}},
+        x:{grid:{display:false}} } }
+  });
+  makeChart('mDonut', {
+    type:'doughnut',
+    data:{ labels:mm.labels, datasets:[{data:mm.org,
+      backgroundColor:['#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af','#172d80'],
+      borderWidth:2, borderColor:css('--card')}]},
+    options:{ maintainAspectRatio:false, cutout:'55%',
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}} },
+    plugins:[donutLabels]
+  });
+  makeChart('mDiv', {
+    type:'line',
+    data:{ labels:mm.labels, datasets:Object.entries(mm.divisions).map(([d,vals])=>(
+      {label:d, data:vals, borderColor:divColor(d), backgroundColor:divColor(d), tension:.35, pointRadius:2.5}))},
+    options:{ maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}},
+      scales:{y:{beginAtZero:true, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
+  makeChart('mGrp', {
+    type:'line',
+    data:{ labels:mm.labels, datasets:[
+      {label:'Team Members', data:mm.groups['Team Members'], borderColor:css('--brand'), backgroundColor:css('--brand'), tension:.35, pointRadius:2.5},
+      {label:'RSC', data:mm.groups['RSC'], borderColor:css('--accent-2'), backgroundColor:css('--accent-2'), tension:.35, pointRadius:2.5},
+      {label:'R100', data:mm.groups['R100'], borderColor:css('--accent-3'), backgroundColor:css('--accent-3'), tension:.35, pointRadius:2.5}
+    ]},
+    options:{ maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxHeight:7}}},
+      scales:{y:{beginAtZero:true, grid:{drawBorder:false}}, x:{grid:{display:false}}} }
+  });
 }
 
 /* ---------- landing: trend + donut ---------- */
@@ -551,4 +682,3 @@ renderTrend(); renderDonut(); renderTabs(); renderCategory(); renderTools();
 </script>
 </body>
 </html>
-
